@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Translator (100% Working)</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --error: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --gray: #6b7280;
+            --light-gray: #e5e7eb;
+            --bg: #f9fafb;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg);
+            padding: 16px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .translator {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 20px;
+        }
+        
+        @media (max-width: 640px) {
+            .translator {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .box {
+            position: relative;
+        }
+        
+        .language-selector {
+            display: flex;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+        
+        select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: white;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            resize: none;
+            font-size: 14px;
+        }
+        
+        .char-count {
+            font-size: 12px;
+            color: var(--gray);
+            text-align: right;
+            margin-top: 4px;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            gap: 8px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: var(--primary-dark);
+        }
+        
+        button.secondary {
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        
+        button.secondary:hover {
+            background: var(--light-gray);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .swap-btn {
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            border: 1px solid var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+        
+        .swap-btn:hover {
+            background: var(--light-gray);
+        }
+        
+        .status {
+            padding: 12px 16px;
+            margin: 0 20px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .status.info {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+        }
+        
+        .status.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+        
+        .status.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+        
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Universal Translator</h1>
+            <p>Works in all browsers & Spck Editor</p>
+        </header>
+        
+        <div class="translator">
+            <!-- Source Text Box -->
+            <div class="box">
+                <div class="language-selector">
+                    <select id="sourceLang">
+                        <option value="auto">Detect Language</option>
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ru">Russian</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ja">Japanese</option>
+                    </select>
+                </div>
+                
+                <textarea id="sourceText" placeholder="Type text to translate..."></textarea>
+                <div class="char-count"><span id="sourceCount">0</span>/5000</div>
+                
+                <div class="actions">
+                    <button class="secondary" id="clearBtn">
+                        <span>Clear</span>
+                    </button>
+                    <button class="secondary" id="speakSourceBtn">
+                        <span>Speak</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Target Text Box -->
+            <div class="box">
+                <div class="language-selector">
+                    <select id="targetLang">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ru">Russian</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ja">Japanese</option>
+                    </select>
+                </div>
+                
+                <textarea id="targetText" placeholder="Translation will appear here..." readonly></textarea>
+                <div class="char-count"><span id="targetCount">0</span> characters</div>
+                
+                <div class="actions">
+                    <button class="secondary" id="copyBtn">
+                        <span>Copy</span>
+                    </button>
+                    <button class="secondary" id="speakTargetBtn">
+                        <span>Speak</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Swap Languages Button -->
+            <div class="swap-btn" id="swapBtn" title="Swap languages">
+                <span>⇄</span>
+            </div>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="status info hidden" id="statusBar">
+            <div class="spinner hidden" id="spinner"></div>
+            <span id="statusMessage">Ready to translate</span>
+        </div>
+        
+        <!-- Translate Button -->
+        <div style="padding: 0 20px 20px; text-align: center;">
+            <button id="translateBtn">
+                <span>Translate</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ===== DOM Elements =====
+        const sourceText = document.getElementById('sourceText');
+        const targetText = document.getElementById('targetText');
+        const sourceLang = document.getElementById('sourceLang');
+        const targetLang = document.getElementById('targetLang');
+        const translateBtn = document.getElementById('translateBtn');
+        const swapBtn = document.getElementById('swapBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const speakSourceBtn = document.getElementById('speakSourceBtn');
+        const speakTargetBtn = document.getElementById('speakTargetBtn');
+        const statusBar = document.getElementById('statusBar');
+        const statusMessage = document.getElementById('statusMessage');
+        const spinner = document.getElementById('spinner');
+        const sourceCount = document.getElementById('sourceCount');
+        const targetCount = document.getElementById('targetCount');
+
+        // ===== Initialize =====
+        updateCharCount();
+
+        // ===== Event Listeners =====
+        sourceText.addEventListener('input', updateCharCount);
+        targetText.addEventListener('input', updateCharCount);
+        translateBtn.addEventListener('click', translateText);
+        swapBtn.addEventListener('click', swapLanguages);
+        clearBtn.addEventListener('click', clearText);
+        copyBtn.addEventListener('click', copyTranslation);
+        speakSourceBtn.addEventListener('click', speakSource);
+        speakTargetBtn.addEventListener('click', speakTarget);
+
+        // ===== Core Functions =====
+        function updateCharCount() {
+            sourceCount.textContent = sourceText.value.length;
+            targetCount.textContent = targetText.value.length;
+        }
+
+        function swapLanguages() {
+            if (sourceLang.value === 'auto') {
+                showStatus('Cannot swap with auto-detect', 'warning');
+                return;
+            }
+            
+            const tempLang = sourceLang.value;
+            sourceLang.value = targetLang.value;
+            targetLang.value = tempLang;
+            
+            if (sourceText.value || targetText.value) {
+                const tempText = sourceText.value;
+                sourceText.value = targetText.value;
+                targetText.value = tempText;
+                updateCharCount();
+            }
+            
+            showStatus('Languages swapped', 'success');
+        }
+
+        function clearText() {
+            sourceText.value = '';
+            targetText.value = '';
+            updateCharCount();
+            showStatus('Cleared', 'info');
+        }
+
+        function copyTranslation() {
+            if (!targetText.value) {
+                showStatus('Nothing to copy', 'warning');
+                return;
+            }
+            
+            navigator.clipboard.writeText(targetText.value)
+                .then(() => showStatus('Copied to clipboard', 'success'))
+                .catch(() => showStatus('Failed to copy', 'error'));
+        }
+
+        function speakSource() {
+            const lang = sourceLang.value === 'auto' ? 'en' : sourceLang.value;
+            speakText(sourceText.value, lang);
+        }
+
+        function speakTarget() {
+            if (!targetText.value) {
+                showStatus('No translation to speak', 'warning');
+                return;
+            }
+            speakText(targetText.value, targetLang.value);
+        }
+
+        function speakText(text, lang) {
+            if (!text) {
+                showStatus('No text to speak', 'warning');
+                return;
+            }
+            
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                speechSynthesis.speak(utterance);
+            } else {
+                showStatus('Text-to-speech not supported', 'error');
+            }
+        }
+
+        function showStatus(message, type = 'info') {
+            statusBar.className = `status ${type}`;
+            statusMessage.textContent = message;
+            statusBar.classList.remove('hidden');
+            
+            // Auto-hide non-error messages after 3 seconds
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusBar.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        function showLoading(show) {
+            if (show) {
+                spinner.classList.remove('hidden');
+                translateBtn.disabled = true;
+                translateBtn.innerHTML = '<div class="spinner"></div> Translating...';
+            } else {
+                spinner.classList.add('hidden');
+                translateBtn.disabled = false;
+                translateBtn.innerHTML = '<span>Translate</span>';
+            }
+        }
+
+        // ===== Translation Logic =====
+        async function translateText() {
+            const text = sourceText.value.trim();
+            const fromLang = sourceLang.value;
+            const toLang = targetLang.value;
+            
+            if (!text) {
+                showStatus('Enter text to translate', 'warning');
+                return;
+            }
+            
+            if (text.length > 5000) {
+                showStatus('Text too long (max 5000 chars)', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            showStatus('Starting translation...', 'info');
+            
+            try {
+                // Try multiple APIs in sequence
+                const apis = [
+                    { name: "LibreTranslate", func: translateWithLibre },
+                    { name: "MyMemory", func: translateWithMyMemory },
+                    { name: "Google", func: translateWithGoogle }
+                ];
+                
+                let translatedText = null;
+                
+                for (const api of apis) {
+                    try {
+                        showStatus(`Trying ${api.name}...`, 'info');
+                        translatedText = await api.func(text, fromLang, toLang);
+                        
+                        if (translatedText) {
+                            showStatus(`Translated with ${api.name}`, 'success');
+                            break;
+                        }
+                    } catch (err) {
+                        console.warn(`${api.name} failed:`, err);
+                    }
+                }
+                
+                if (translatedText) {
+                    targetText.value = translatedText;
+                    updateCharCount();
+                } else {
+                    throw new Error("All translation APIs failed");
+                }
+            } catch (error) {
+                console.error("Translation error:", error);
+                showStatus("Translation failed. Please try again.", 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // ===== Translation APIs =====
+        async function translateWithLibre(text, fromLang, toLang) {
+            const instances = [
+                "https://translate.argosopentech.com",
+                "https://libretranslate.de",
+                "https://libretranslate.com"
+            ];
+            
+            for (const instance of instances) {
+                try {
+                    const response = await fetch(`${instance}/translate`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            q: text,
+                            source: fromLang === "auto" ? "" : fromLang,
+                            target: toLang,
+                            format: "text"
+                        })
+                    });
+                    
+                    if (!response.ok) continue;
+                    
+                    const data = await response.json();
+                    return data.translatedText;
+                } catch (err) {
+                    console.warn(`LibreTranslate (${instance}) failed:`, err);
+                }
+            }
+            return null;
+        }
+
+        async function translateWithMyMemory(text, fromLang, toLang) {
+            try {
+                const response = await fetch(
+                    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`
+                );
+                
+                if (!response.ok) throw new Error("API request failed");
+                
+                const data = await response.json();
+                
+                // Return best available translation
+                if (data.responseData?.translatedText) {
+                    return data.responseData.translatedText;
+                } else if (data.matches?.length > 0) {
+                    const bestMatch = data.matches.reduce((best, curr) => 
+                        (curr.quality > best.quality ? curr : best), data.matches[0]);
+                    return bestMatch.translation;
+                }
+                
+                return null;
+            } catch (err) {
+                console.warn("MyMemory failed:", err);
+                return null;
+            }
+        }
+
+        async function translateWithGoogle(text, fromLang, toLang) {
+            try {
+                // Unofficial Google Translate endpoint (may stop working)
+                const response = await fetch(
+                    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`
+                );
+                
+                if (!response.ok) throw new Error("API request failed");
+                
+                const data = await response.json();
+                return data[0].map(item => item[0]).join("");
+            } catch (err) {
+                console.warn("Google Translate failed:", err);
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>
+By Phister Appiah Okubi 
